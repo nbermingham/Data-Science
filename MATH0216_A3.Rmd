@@ -1,0 +1,191 @@
+---
+title: 'MATH 216: Assignment 3'
+author: "Nick Bermingham"
+output: 
+  html_document
+---
+
+```{r include=FALSE}
+library(tidyverse)
+library(ggthemes)
+```
+
+#  Instructions
+
+- submit the .html file to Canvas
+- you are encouraged to work together and ask your peers questions. Each person should submit their own work. 
+- You may share parts of your code to ask or answer questions on Slack. You should avoid sharing (copying and pasting) the entirety of your answers.
+- make sure you include at least one acknowledgement 
+
+### Loading the data
+
+The dataset `nycflights13` contains information on all flights that departed NYC (i.e. JFK, LGA or EWR) in 2013. Load it the data using the code below.
+
+```{r}
+#To load directly from `nycflights13` package
+# make sure you have ran install.packages("nycflights13")
+library(nycflights13)
+#tblflights <- tbl_df(flights)
+
+#OR
+# to load from local .csv file
+tblflights <- read.csv("tblflights.csv")
+```
+
+Take a look at the data. Note what the column names are. Note what each row represents.
+
+### Data Description 
+
+- **year, month, day** Date of departure
+- **dep_time, arr_time** Actual departure and arrival times (format HHMM or HMM), local tz.
+- **sched_dep_time, sched_arr_time** Scheduled departure and arrival times (format HHMM or HMM), local tz.
+- **dep_delay, arr_delay** Departure and arrival delays, in minutes. Negative times represent early departures/arrivals.
+- **carrier** Two letter carrier abbreviation. See table below to get full names of carriers
+- **flight** Flight number.
+- **tailnum** Plane tail number
+- **origin, dest** Origin and destination. 
+- **air_time** Amount of time spent in the air, in minutes.
+- **distance** Distance between airports, in miles.
+- **hour, minute** Time of scheduled departure broken into hour and minutes.}
+
+
+```{r}
+#the airline codes can be found using the following code
+tbl_df(airlines)
+```
+
+# Problems
+
+## Question 1
+
+Create a new column called `route` which contains the both the origin and destination airport codes seperated by a dash. For example, a flight that goes from JFK to MIA should display `JFK-MIA` in this new column. 
+
+```{r, results=FALSE}
+mutate(.data = tblflights, route = paste(origin, dest, sep = "-"))
+```
+
+
+## Question 2
+
+How many different airlines are there? 
+
+```{r}
+length(table(tblflights$carrier)) 
+```
+
+There are 16 different airlines
+
+Determine the mean departure delay for each of these different airlines.  Note: the var `dep_delay` is the departure delay in minutes. 
+
+```{r}
+tblflights %>%
+  filter(is.na(dep_delay) == 0) %>%
+  group_by(carrier) %>% 
+  summarize(mean.delay = mean(dep_delay))
+```
+
+
+## Question 4
+
+Print a list of the 10 flights with the longest departure delays.  Your list should include the date, schedule departure time, actual departure time, carrier, the departure airport and destination airport. 
+
+```{r}
+tblflights %>% 
+  arrange(-dep_delay) %>%
+  select(year, month, day, sched_dep_time, dep_time, carrier, origin, dest, dep_delay) %>% 
+  head(n = 10)
+```
+
+Optional: include a meme of how you would feel if you were on one of these 10 flights
+
+## Question 5
+
+Create two histograms - one for the departure delays and one for the arrival delays. Make sure they are well-labeled (have a title, x and y axis labels, etc.)
+
+```{r}
+tblflights %>% 
+  filter(is.na(dep_delay) == 0 & dep_delay >= 0) %>% 
+  ggplot(aes(dep_delay)) + 
+  theme_wsj() +
+  geom_histogram(binwidth = 0.25, na.rm = TRUE) + 
+  labs(title = "Departure Delays", 
+         x = "Departure Delay (in minutes)", 
+         y = "Frequency", 
+         caption = "source: tblflights dataset") +
+  scale_x_log10() 
+
+
+tblflights %>% 
+  filter(is.na(dep_delay) == 0 & dep_delay >= 0) %>%  
+  ggplot(aes(arr_delay)) +
+  geom_histogram(binwidth = 0.25, na.rm = TRUE) +
+  theme_economist() +
+  labs(title = "Arrival Delays",
+         x = "Arrival Delay (in minutes)", 
+         y = "Frequency", 
+         caption = "source: tblflights dataset") +
+  scale_x_log10()
+```
+
+
+## Question 6
+
+For all the flights JFK - LAX, create a side-by-side boxplot to compare the arrival delay across all carriers. Make sure your plot is well-labelled (have a title, x and y axis labels, etc.)
+
+
+```{r}
+tblflights %>% 
+  filter(origin == "JFK", dest == "LAX", arr_delay > 0, arr_delay <= 400) %>% 
+  ggplot(aes(x = carrier, y = arr_delay)) +
+  geom_boxplot(fill = "steelblue", outlier.size = 1) +
+  labs(title = "Arrival Delays Across Carriers",
+         x = "Carrier", 
+         y = "Delay (Minutes)", 
+         caption = "source: tblflights dataset")
+  
+```
+
+
+## Question 7
+
+Create a table called `carrier_flights_over_time` that displays the count of the number of flights for all carriers across all months in wide format.  
+
+Hint: the first column should be all the carriers, the first row should be all the months. The data inside the table should be the number of flights. 
+
+
+```{r}
+carrier_flights_over_time <- tblflights %>% 
+  group_by(carrier, month) %>% 
+  summarize(sum = length(carrier)) %>% 
+  spread(key = month, value = sum)
+
+carrier_flights_over_time
+```
+
+
+
+## Question 8: Challenge
+
+Consider all the flights going from anywhere in the NYC area to anywhere in the NYC area (JFK, LGA or EWR) to anywhere in the San Fransisco Bay area (SFO, SJC or OAK). Sum how many flights were ran by each airline in each month and create a line plot to show the the number of flights varies over time for each airline. Make sure your plot is well-labelled (have a title, x and y axis labels, etc.)
+
+```{r}
+tblflights %>% 
+  filter((origin == "JFK" | origin == "LGA" | origin == "EWR") & (dest == "SFO" | dest == "SJC" | dest == "OAK")) %>% 
+  group_by(carrier, month) %>% 
+  summarize(sum = length(carrier)) %>% 
+  ggplot(aes(x = month, y = sum)) +
+  geom_point(aes(col=carrier), size=2) +
+  geom_line(aes(col=carrier)) +
+  labs(title = "Flights from NYC Area to SF Bay Area by Carrier",
+          x = "Month", 
+          y = "Number of Flights", 
+          caption = "source: tblflights dataset") +
+  scale_x_discrete(limits=c("JAN","FEB","MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC")) +
+  theme_dark()
+  
+```
+
+
+
+# Acknowledgements
+Use this space to acknowledge anyone who has helped you with this lab. This could be a peer who helped you when you got stuck. This could be the peer tutor.  This could be your family or a friend for their support. **You must include at least one acknowledgement**. 
