@@ -1,0 +1,107 @@
+---
+title: "Math 216 - Assignment 6: Modeling"
+author: "Nick Bermingham"
+output:
+  html_document:
+    fig_crop: yes
+    toc: true
+    theme: yeti
+---
+
+```{r include=FALSE}
+library(tidyverse)
+```
+
+#  Instructions
+
+- submit the .html file to Canvas
+- you are encouraged to work together and ask your peers questions. Each person should submit their own work. 
+- You may share parts of your code to ask or answer questions on Slack. You should avoid sharing (copying and pasting) the entirety of your answers.
+- make sure you include at least one acknowledgement 
+- The assignment is worth 15 points total (3 points each). The specific number of points for each part is listed below. 
+
+### Loading the data
+
+The goal of this homework is to explore the data set `taboo.csv`. This data set contains information from a subset of participants in a study that
+sought to investigate possible relationships between "taboo" topics and a measure of a participant's overall happiness. You may assume that the participants were selected
+randomly, and no two participants were from the same immediate family. 
+
+```{r}
+taboo <-read.csv("https://raw.githubusercontent.com/ebmwhite/MATH0216/master/assignments/taboo.csv")
+```
+
+The variables in this data set are:
+1) `ID`- The ID of the person in the study. Participant have been given anonymous
+IDs to protect their identity.
+2) `Salary` - The yearly gross income for that participant.
+3) `Gender`- The participant's self-reported gender. For this subset, only participants reporting male or female were selected.
+4) `Sex`- The self-reported average number of times the participant engaged in sexual activity per week.
+5) `Alcohol` - The average number of 12oz. alcoholic drinks the participant consumes weekly.
+6) `Marijuana` - A binary variable. 1 indicates the participant uses marijuana regularly, defined as smoking marijuana at least once a week. 0 indicates the participant
+never or rarely uses marijuana.
+7) `Cigarette` -  A binary variable. 1 indicates the participant smokes at least a pack of
+cigarettes per week. 0 indicates the participant smokes less than a pack of cigarettes
+per week.
+8) `Happiness` - An indicator of the participant's happiness, on a scale from 1 to 100.
+
+These values were obtained through a survey which asked basic questions about the participant's well-being and current satisfaction about their life.
+
+## Question 1: Construct a linear model using salary to predict happiness. Plot this linear model against the data. How well does your model fit the data? (3 points)
+
+```{r}
+model <- lm(Happiness ~ Salary, data = taboo)
+
+taboo %>% 
+  ggplot(aes(x = Salary, y = Happiness)) +
+  geom_point() +
+  geom_abline(slope = coef(model)[2],
+              intercept = coef(model)[1],
+              color = "red")
+
+summary(model)
+```
+
+Salary is not a good predictor for hapiness, as the p-value of the linear model does not meet any of the significance cutoffs. 
+
+
+## Question 2: Given the trend in the graph in (1), try adding another variable (in addition to salary) to your model to predict happiness. Is this model better or worse? Why? (3 points) 
+
+```{r}
+model2 <- lm(Happiness ~ Salary + factor(Gender), data = taboo)
+
+summary(model2)
+
+summary(model)$r.squared
+summary(model2)$r.squared
+```
+Adding the the variable of gender to the model, we get a slighter better predictor of happiness than before, as the r.squared value is higher, but the model still isnt statistically significant.
+
+## Question 3: Construct a graph that includes the variables sex, happiness, and gender. Comment about what you see. (3 points)
+
+```{r}
+taboo %>% 
+  ggplot(aes(x = Sex, y = Happiness, color = Gender)) +
+  geom_point()
+```
+
+Based on this simple scatterplot, it looks like happiness and sex frequency are positively correlated - although I would need to conduct a more sophisticated statistical analysis to confirm this claim.
+
+## Question 4: Now, construct a linear model that predicts happiness as a function of the Sex and Gender variables. What does this model tell you about the relationship between these variables (and how does this compare to your observations from (3)). (3 points)
+
+```{r}
+model3 <- lm(data = taboo, Happiness ~ Sex + factor(Gender))
+
+summary(model3)
+```
+
+Based on this linear model, it looks like there is an extremely significant correlation between sex and happiness. This confirms my suspicions in (3). Additionally, there is a significant correlation between gender and happiness. Based on the graph in (3), it looks like males are happier than females.
+
+## Question 5: Build the best model you can to predict whether or not a randomly selected person smokes cigarettes. Which variables are most correlated with cigarette smoking, and which are least correlated? (3 points)
+
+```{r}
+full_model <- lm(data = taboo, Cigarette ~ Happiness + Sex + Gender + Alcohol + Salary)
+
+step(full_model)
+```
+
+Based on the step of the linear model taking into account all the variables provided, using all the variables provides the best model. This also shows that Happiness is the most correlated, as it has the highest AIC value. Next comes alcohol, then Salary, then sex, then gender.

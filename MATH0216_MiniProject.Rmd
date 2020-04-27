@@ -1,0 +1,100 @@
+---
+title: "Google Stock Analysis from 2006-2014"
+author: "Nick Bermingham"
+output: 
+  html_document:
+    code_folding: hide
+    theme: yeti
+---
+
+```{r include=FALSE}
+library(openintro)
+library(ggplot2)
+library(tidyverse)
+library(ggthemes)
+library(scales)
+library(lubridate)
+
+goog_data <- openintro::goog
+goog_data$Date <- as_date(goog_data$Date)
+```
+
+# Introduction
+
+I am going to be looking at Google stock data from 2006 to 2014. I found and downloaded this dataset from the openintro package. This data was collected by Yahoo! Finance. Each datapoint contains the date of the stock, and a set of prices relevant to that day's google stock. I plan on using open (the price of the stock at the beginning of the trading day), the close (the price at the end of the trading day), the high (the highest price of the google stock on that given day), the low (the lowest price), and the volume (the number of google shares traded on that given day). For the sake of simplicity, I will not be using the "adj. close" attribute, as the adjusted closing price reflects the closing price of the stock in relation to other stock attributes, which are not included in the openintro::goog dataset.  
+
+This google stock dataset, and subsequent analysis completed on it, will be interesting and relevant given the growth and presence that the company Google has had. Although this dataset is not current, it does display a dramatic growth period of the company. 
+
+
+# Results 
+
+```{r warning=FALSE}
+#format goog_data
+goog_data_long <- goog_data %>% 
+  select(Date, Open, Close, High, Low) %>%
+  gather(key = "Attribute", value = "Price", c(Open, Close, High, Low)) 
+goog_data_long$Date <- as_date(goog_data$Date)
+
+
+#plot goog_data
+ggplot(goog_data_long, aes(x = Date, y = Price, color=Attribute)) +
+  geom_line() +
+  labs(title="Google Stock Price Over Time",
+       subtitle="2008 - 2014",
+       x="Date (Year)",
+       y="Price (US Dollars)",
+       caption="source: Yahoo! Finance") +
+  theme_foundation()
+
+```
+
+Based on the line graph generated, we can see the Google stock attributes (High, Low, Open, Close). We see a general upward trend of the stock price, with a notable drop in the year 2009. This is explained by the stock market crash during this time. Otherwise, all four statistics generally increase. Considering the rapid growth of the stock late 2013, it would be useful to see some later data, to determine if this increase continues.
+
+```{r}
+goog_data %>% 
+  select(Date, Volume) %>% 
+  ggplot(aes(x = Date, y = Volume/10^5)) +
+  geom_bar(stat = "identity") +
+  labs(title="Google Stock Trading Volume Over Time",
+       subtitle="2008 - 2014",
+       x="Date (Year)",
+       y="Shares Traded (hundred thousands)",
+       caption="source: Yahoo! Finance") +
+  theme_solarized()
+```
+
+Based on the bar chart created, the Google stock was traded at a decreasing rate during this time. This is likely due to the increase in the stock's price. In 2006, Google stock was being traded at it's highest volume during the 8 year period, and at it's lowest towards the end of 2013. Because of the price increase, this plot is misleading, so I'd like to create another plot adjusting for price. 
+
+```{r}
+goog_data %>% 
+  select(Date, Volume, High, Low) %>% 
+  mutate(vol_adj = ((High+Low)/2)*Volume/10^8) %>% 
+  ggplot(aes(x = Date, y = vol_adj)) +
+  geom_bar(stat = "identity", fill = "steelblue") +
+  labs(title="Google Stock Trading Volume Over Time",
+       subtitle="2008 - 2014",
+       x="Date (Year)",
+       y="Approx. Total Capital (in $100 millions)",
+       caption="source: Yahoo! Finance") +
+  scale_y_continuous() +
+  theme_calc()
+```
+
+In the third plot, I created another variable that adjusted the volume traded based on the stock's share. I simply multiplied the stock's volume by the average of the High and Low prices during that trading day. It is important to note that this is only an approximate value, as the (High + Low) /2 computation is only a guess at the average trading value throughout the day. If the stock traded primarily towards the High on a given day, this value is is a gross underestimate, for example. Given the few data points in each observation, this is the best estimate I can come up with. This results in a bar graph that doesn't decrease over time as much, but still has a max in 2006. There is also a jump in late 2007 that wasn't quite as pronounced as it was in the previous graph. 
+
+
+
+# Discussion
+should be used to interpret your plots/tables. It is a great opportunity to communicate what you have learned from your exploratory data analysis to your general audience. It is also an opportunity to make suggestions for future work - is there other information you wish you had? etc. Most students will have 2-3 paragraphs. 
+
+I learned that the Google stock underwent significant price increase during the eight year period from 2008-2014, with a dip during the 2009 financial crisis. The stock volume decreased during this time, but this maybe is explained by the price increase. If we compute the daily capital traded on this stock, this value decreased in general, with a spike in 2008. Perhaps that spike would have continued if it weren't for the 2009 financial crisis.
+
+For future work, I'd like to use more data, and more recent data. Given the time range, this dataset is useful to analyze the consequences and subsequent recovery from the 2009 crisis, but I'd love to look at the stock prices and trading volumes of more recent data. Additionally, this dataset was good to interpret general trends, but is quite small for a 8 year period, with only 98 observations. I could have used 10 times more observations in this analysis.
+
+
+
+# Acknowledgements
+
+Thanks mom for putting up with me and my two brothers now that we're all home!
+
+

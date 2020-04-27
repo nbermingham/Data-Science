@@ -1,0 +1,118 @@
+```{r include=FALSE}
+library(tidyverse)
+library(rvest)
+```
+
+#  Instructions
+
+- submit the .html file to Canvas
+- you are encouraged to work together and ask your peers questions. Each person should submit their own work. 
+- You may share parts of your code to ask or answer questions on Slack. You should avoid sharing (copying and pasting) the entirety of your answers.
+- make sure you include at least one acknowledgement 
+- The assignment is worth 15 points total. The specific number of points for each part is listed below. 
+
+### Loading the data
+
+You have decided to open an online store selling things to keep people busy and creative. 
+
+```{r}
+products <-read.csv("https://ebmwhite.github.io/MATH0216/assignments/products.csv")
+orders <-read.csv("https://ebmwhite.github.io/MATH0216/assignments/orders.csv")
+customers <-read.csv("https://ebmwhite.github.io/MATH0216/assignments/customers.csv")
+```
+
+A list of the products you sell is available in `products`. A list of your current orders is available in `orders`. A list of your customers is available in `customers`. 
+
+Please click on each dataset to get familar with what each row represents and what columns are available. 
+
+## Question 1: Print out a list of all the products you sell which cost under $10 (1 point)
+
+```{r}
+products %>% 
+  filter(price <10)
+```
+
+## Question 2: How many puzzles have you sold? (1 point) 
+
+```{r}
+orders %>% 
+  filter(product_id == 3) %>% 
+  summarise(sum = sum(quantity))
+```
+
+
+## Question 3: Consider the order with `order_id=4`. What type of product did they order? (1 point)
+
+Note: you can answer this by manually looking at the tables, or you can use the appropriate join function. 
+
+```{r}
+product <- orders$product_id[orders$order_id == 4]
+
+products$description[product]
+```
+
+
+## Question 4: Consider the order with `order_id=7`. What is the email address associated with this order? (1 point)
+
+Note: you can answer this by manually looking at the tables, or you can use the appropriate join function.
+
+```{r}
+customer <- orders$customer_id[orders$order_id == 7]
+
+customers$email[customer]
+```
+
+
+
+## Question 5 (6 points, 2 points for each part)
+
+## (a) Return a dataframe which has all the columns and rows from `orders` but also contains an additional column with the `price` of the item listed in the `products` dataset. For example, if `product_id=3`, the column `price` should contain 8. 
+
+```{r}
+orders <- orders%>%
+  mutate(price = products$price[product_id])
+
+orders
+```
+
+
+## (b) In the `orders` dataset, add a new column called `total` which indicates the total cost of the order to the customer. You may want to use your answer from (a) to help you.
+
+```{r}
+orders <- orders %>% 
+  mutate(total = price * quantity)
+
+orders
+```
+
+## (c) What is the total amount of revenue you have brought in so far? You may want to use your answer from (b) to help you. 
+
+```{r}
+orders %>% 
+  summarise(total_revenue = sum(total))
+```
+
+## Question 6: List the names and addresses (including `address`, `city`, and `state`) of the people who placed orders on March 13, 2020. (2 points).  
+
+```{r}
+people <- orders$customer_id[orders$time_stamp == "3/13/20"]
+customers[people, 2:5]
+```
+
+
+## Question 7: Find a dataset on Wikipedia that you think is interesting. Scrape the data from the web. Please include a link to the wikipedia pages and print out the first few rows of the dataset using the `head` command. 
+
+```{r}
+world_cup_URL <- "https://en.wikipedia.org/wiki/FIFA_World_Cup"
+
+world_cup_URL %>% 
+  read_html() %>% 
+  html_nodes("table") %>% 
+  .[[3]] %>% 
+  html_table(fill = TRUE) %>% 
+  head()
+```
+
+### Acknowledgements
+
+Thanks Mom for being so nice to me
